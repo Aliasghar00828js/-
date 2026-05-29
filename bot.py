@@ -125,8 +125,9 @@ def handle_message(message):
         bot.send_message(message.chat.id, "برای ارتباط با پشتیبانی روی دکمه زیر کلیک کنید:", reply_markup=markup)
         
     elif message.text == "📩 پیشنهادات و انتقادات":
-        msg = bot.send_message(message.chat.id, "لطفا پیشنهادات یا جوک‌های جدید خود را بنویسید و ارسال کنید:\n\n(اگر پشیمان شدید، روی یکی از دکمه‌های منو کلیک کنید)")
-        bot.register_next_step_handler(msg, forward_to_admin)
+msg = bot.send_message(message.chat.id, "📝 لطفاً پیام، پیشنهاد یا جوک خود را همراه با نامتان ارسال کنید.\n\n⚠️ پیام شما مستقیماً برای برنامه‌نویس فوروارد می‌شود. 👨‍💻")
+        
+  bot.register_next_step_handler(msg, forward_to_admin)
 
 # --- ارسال پیشنهاد به ادمین (با سیستم گزارش دقیق) ---
 def forward_to_admin(message):
