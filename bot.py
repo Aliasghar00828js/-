@@ -16,7 +16,9 @@ def home():
     return "Bot is Online!"
 
 def run():
-    app.run(host='0.0.0.0', port=8080)
+    # تغییر ۱: دریافت پورت خودکار از سرور Railway
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     t = Thread(target=run)
@@ -107,6 +109,10 @@ jokes = [
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     total_jokes = len(jokes)
+    
+    # تغییر ۲: دریافت خودکار اسم کوچک کاربری که ربات را استارت کرده
+    user_first_name = message.from_user.first_name 
+    
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("😂 یه جوک بگو")
     btn2 = types.KeyboardButton("📩 پیشنهادات و انتقادات")
@@ -114,8 +120,9 @@ def send_welcome(message):
     markup.add(btn1)
     markup.add(btn2, btn3)
     
+    # استفاده از متغیر اسم در پیام
     welcome_text = (
-        f"🌟 به ربات جوک‌های بی‌مزه خوش اومدی علی‌اصغر عزیز!\n\n"
+        f"🌟 به ربات جوک‌های بی‌مزه خوش اومدی {user_first_name} عزیز!\n\n"
         f"ما اینجا بیش از {total_jokes} جوک آماده کردیم.\n\n"
         f"📌 قابلیت‌ها:\n"
         f"✅ آرشیو بزرگ جوک (+{total_jokes} مورد)\n"
