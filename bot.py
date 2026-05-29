@@ -118,38 +118,32 @@ def handle_message(message):
         bot.send_message(message.chat.id, joke["q"], reply_markup=markup)
         
     elif message.text == "👨‍💻 پشتیبانی":
-        # ساخت دکمه شیشه ای برای ارتباط مستقیم
         markup = types.InlineKeyboardMarkup()
         btn = types.InlineKeyboardButton("ارتباط مستقیم با ادمین 💬", url="https://t.me/ALiasghR4321")
         markup.add(btn)
         bot.send_message(message.chat.id, "برای ارتباط با پشتیبانی روی دکمه زیر کلیک کنید:", reply_markup=markup)
         
     elif message.text == "📩 پیشنهادات و انتقادات":
-msg = bot.send_message(message.chat.id, "📝 لطفاً پیام، پیشنهاد یا جوک خود را همراه با نامتان ارسال کنید.\n\n⚠️ پیام شما مستقیماً برای برنامه‌نویس فوروارد می‌شود. 👨‍💻")
-        
-  bot.register_next_step_handler(msg, forward_to_admin)
+        msg = bot.send_message(message.chat.id, "📝 لطفاً پیام، پیشنهاد یا جوک خود را همراه با نامتان ارسال کنید.\n\n⚠️ پیام شما مستقیماً برای برنامه‌نویس فوروارد می‌شود. 👨‍💻")
+        bot.register_next_step_handler(msg, forward_to_admin)
 
-# --- ارسال پیشنهاد به ادمین (با سیستم گزارش دقیق) ---
+# --- ارسال پیشنهاد به ادمین ---
 def forward_to_admin(message):
-    # چک کردن اینکه آیا کاربر پشیمان شده و دکمه دیگری را زده است یا نه
     if message.text in ["😂 یه جوک بگو", "👨‍💻 پشتیبانی", "📩 پیشنهادات و انتقادات", "/start"]:
         bot.send_message(message.chat.id, "❌ ارسال پیشنهاد لغو شد.")
-        handle_message(message) # اجرای دستور دکمه‌ای که کاربر تازه زده
+        handle_message(message)
         return
 
     try:
-        # دریافت زمان و تاریخ تهران
         tehran_tz = pytz.timezone('Asia/Tehran')
         now = datetime.datetime.now(tehran_tz)
         jalali_now = jdatetime.datetime.fromgregorian(datetime=now)
         date_str = jalali_now.strftime("%Y/%m/%d")
         time_str = jalali_now.strftime("%H:%M:%S")
 
-        # اطلاعات کاربر
         user_id = message.from_user.id
         username = f"@{message.from_user.username}" if message.from_user.username else "ندارد"
 
-        # ساخت متن گزارش
         report_text = (
             f"📬 **پیشنهاد / پیام جدید**\n\n"
             f"👤 **آیدی عددی:** `{user_id}`\n"
@@ -162,15 +156,14 @@ def forward_to_admin(message):
             report_text += f"📝 **متن پیام:**\n{message.text}"
             bot.send_message(ADMIN_CHAT_ID, report_text, parse_mode="Markdown")
         else:
-            report_text += f"📎 **کاربر یک فایل/عکس ارسال کرده است (در پیام بعدی)**"
+            report_text += f"📎 **کاربر یک فایل/عکس ارسال کرده است**"
             bot.send_message(ADMIN_CHAT_ID, report_text, parse_mode="Markdown")
             bot.copy_message(ADMIN_CHAT_ID, message.chat.id, message.message_id)
 
-        bot.send_message(message.chat.id, "✅ پیام شما با موفقیت برای ادمین ارسال شد. ممنون!")
+        bot.send_message(message.chat.id, "✅ پیام شما با موفقیت برای برنامه‌نویس ارسال شد. ممنون!")
     except Exception as e:
         bot.send_message(message.chat.id, "❌ خطایی در ارسال رخ داد.")
 
-# --- مدیریت دکمه‌های شیشه‌ای جوک ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith('ans_'))
 def answer_joke(call):
     idx = int(call.data.split('_')[1])
@@ -178,3 +171,4 @@ def answer_joke(call):
     bot.answer_callback_query(call.id)
 
 bot.polling()
+        
