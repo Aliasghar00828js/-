@@ -109,18 +109,17 @@ jokes = [
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     total_jokes = len(jokes)
-    
-    # تغییر ۲: دریافت خودکار اسم کوچک کاربری که ربات را استارت کرده
     user_first_name = message.from_user.first_name 
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("😂 یه جوک بگو")
+    btn_chiestan = types.KeyboardButton("🧐 چیستان") # دکمه جدید
     btn2 = types.KeyboardButton("📩 پیشنهادات و انتقادات")
     btn3 = types.KeyboardButton("👨‍💻 پشتیبانی")
-    markup.add(btn1)
+    
+    markup.add(btn1, btn_chiestan) # قرار دادن جوک و چیستان در یک ردیف
     markup.add(btn2, btn3)
     
-    # استفاده از متغیر اسم در پیام
     welcome_text = (
         f"🌟 به ربات جوک‌های بی‌مزه خوش اومدی {user_first_name} عزیز!\n\n"
         f"ما اینجا بیش از {total_jokes} جوک آماده کردیم.\n\n"
@@ -141,6 +140,9 @@ def handle_message(message):
         btn = types.InlineKeyboardButton("میدونی چرا؟ 🤔", callback_data=f"ans_{jokes.index(joke)}")
         markup.add(btn)
         bot.send_message(message.chat.id, joke["q"], reply_markup=markup)
+
+    elif message.text == "🧐 چیستان": # پاسخ به دکمه چیستان
+        bot.send_message(message.chat.id, "🚧 این بخش بزودی اضافه میشود...")
         
     elif message.text == "👨‍💻 پشتیبانی":
         markup = types.InlineKeyboardMarkup()
@@ -154,7 +156,7 @@ def handle_message(message):
 
 # --- ارسال پیشنهاد به ادمین ---
 def forward_to_admin(message):
-    if message.text in ["😂 یه جوک بگو", "👨‍💻 پشتیبانی", "📩 پیشنهادات و انتقادات", "/start"]:
+    if message.text in ["😂 یه جوک بگو", "🧐 چیستان", "👨‍💻 پشتیبانی", "📩 پیشنهادات و انتقادات", "/start"]:
         bot.send_message(message.chat.id, "❌ ارسال پیشنهاد لغو شد.")
         handle_message(message)
         return
@@ -198,4 +200,4 @@ def answer_joke(call):
 # شروع به کار ربات
 if __name__ == "__main__":
     bot.polling(none_stop=True)
-    
+
