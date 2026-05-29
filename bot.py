@@ -2,10 +2,13 @@ import telebot
 import random
 from telebot import types
 import os
+import datetime
+import pytz
+import jdatetime
 
 # --- تنظیمات اولیه ---
 TOKEN = os.getenv('BOT_TOKEN')
-# چت آیدی عددی شما که از ربات گرفتی
+# چت آیدی عددی شما
 ADMIN_CHAT_ID = 7007467756  
 
 bot = telebot.TeleBot(TOKEN)
@@ -115,17 +118,54 @@ def handle_message(message):
         bot.send_message(message.chat.id, joke["q"], reply_markup=markup)
         
     elif message.text == "👨‍💻 پشتیبانی":
-        bot.send_message(message.chat.id, "جهت پشتیبانی به آیدی زیر پیام دهید:\n🆔 @ALiasghR4321")
+        # ساخت دکمه شیشه ای برای ارتباط مستقیم
+        markup = types.InlineKeyboardMarkup()
+        btn = types.InlineKeyboardButton("ارتباط مستقیم با ادمین 💬", url="https://t.me/ALiasghR4321")
+        markup.add(btn)
+        bot.send_message(message.chat.id, "برای ارتباط با پشتیبانی روی دکمه زیر کلیک کنید:", reply_markup=markup)
         
     elif message.text == "📩 پیشنهادات و انتقادات":
-        msg = bot.send_message(message.chat.id, "لطفا پیشنهادات یا جوک‌های جدید خود را ارسال کنید.\n\n⚠️ این پیام مستقیم برای ادمین فوروارد می‌شود.")
+        msg = bot.send_message(message.chat.id, "لطفا پیشنهادات یا جوک‌های جدید خود را بنویسید و ارسال کنید:\n\n(اگر پشیمان شدید، روی یکی از دکمه‌های منو کلیک کنید)")
         bot.register_next_step_handler(msg, forward_to_admin)
 
-# --- ارسال پیشنهاد به ادمین ---
+# --- ارسال پیشنهاد به ادمین (با سیستم گزارش دقیق) ---
 def forward_to_admin(message):
+    # چک کردن اینکه آیا کاربر پشیمان شده و دکمه دیگری را زده است یا نه
+    if message.text in ["😂 یه جوک بگو", "👨‍💻 پشتیبانی", "📩 پیشنهادات و انتقادات", "/start"]:
+        bot.send_message(message.chat.id, "❌ ارسال پیشنهاد لغو شد.")
+        handle_message(message) # اجرای دستور دکمه‌ای که کاربر تازه زده
+        return
+
     try:
-        bot.forward_message(ADMIN_CHAT_ID, message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, "✅ پیام شما با موفقیت ارسال شد. ممنون!")
+        # دریافت زمان و تاریخ تهران
+        tehran_tz = pytz.timezone('Asia/Tehran')
+        now = datetime.datetime.now(tehran_tz)
+        jalali_now = jdatetime.datetime.fromgregorian(datetime=now)
+        date_str = jalali_now.strftime("%Y/%m/%d")
+        time_str = jalali_now.strftime("%H:%M:%S")
+
+        # اطلاعات کاربر
+        user_id = message.from_user.id
+        username = f"@{message.from_user.username}" if message.from_user.username else "ندارد"
+
+        # ساخت متن گزارش
+        report_text = (
+            f"📬 **پیشنهاد / پیام جدید**\n\n"
+            f"👤 **آیدی عددی:** `{user_id}`\n"
+            f"🔗 **یوزرنیم:** {username}\n"
+            f"📅 **تاریخ:** {date_str}\n"
+            f"⏰ **ساعت (تهران):** {time_str}\n\n"
+        )
+
+        if message.text:
+            report_text += f"📝 **متن پیام:**\n{message.text}"
+            bot.send_message(ADMIN_CHAT_ID, report_text, parse_mode="Markdown")
+        else:
+            report_text += f"📎 **کاربر یک فایل/عکس ارسال کرده است (در پیام بعدی)**"
+            bot.send_message(ADMIN_CHAT_ID, report_text, parse_mode="Markdown")
+            bot.copy_message(ADMIN_CHAT_ID, message.chat.id, message.message_id)
+
+        bot.send_message(message.chat.id, "✅ پیام شما با موفقیت برای ادمین ارسال شد. ممنون!")
     except Exception as e:
         bot.send_message(message.chat.id, "❌ خطایی در ارسال رخ داد.")
 
