@@ -5,10 +5,28 @@ import os
 import datetime
 import pytz
 import jdatetime
+from flask import Flask
+from threading import Thread
 
-# --- تنظیمات اولیه ---
+# --- تنظیمات وب‌سرور برای جلوگیری از خواب رفتن ---
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is Online!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# اجرای سرور نگهدارنده قبل از شروع ربات
+keep_alive()
+
+# --- تنظیمات اولیه ربات ---
 TOKEN = os.getenv('BOT_TOKEN')
-# چت آیدی عددی شما
 ADMIN_CHAT_ID = 7007467756  
 
 bot = telebot.TeleBot(TOKEN)
@@ -170,5 +188,7 @@ def answer_joke(call):
     bot.send_message(call.message.chat.id, jokes[idx]["a"])
     bot.answer_callback_query(call.id)
 
-bot.polling()
-        
+# شروع به کار ربات
+if __name__ == "__main__":
+    bot.polling(none_stop=True)
+    
