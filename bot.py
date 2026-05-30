@@ -1,4 +1,4 @@
-Import telebot
+import telebot
 import random
 import time
 from telebot import types
@@ -189,3 +189,4 @@ if __name__ == "__main__":
     bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
+        
