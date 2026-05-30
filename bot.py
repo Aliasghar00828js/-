@@ -42,10 +42,19 @@ except Exception as e:
     # در صورتی که فایل پیدا نشد یا مشکلی داشت
     jokes = [{"q": "خطا در خواندن جوک‌ها", "a": "لطفاً به ادمین اطلاع دهید."}]
 
+# --- خواندن لیست چیستان‌ها از فایل JSON ---
+try:
+    with open('riddles.json', 'r', encoding='utf-8') as f:
+        riddles = json.load(f)
+except Exception as e:
+    # در صورتی که فایل پیدا نشد یا مشکلی داشت
+    riddles = [{"q": "خطا در خواندن چیستان‌ها", "a": "لطفاً به ادمین اطلاع دهید."}]
+
 # --- هندلر دستور استارت ---
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     total_jokes = len(jokes)
+    total_riddles = len(riddles)
     user_first_name = message.from_user.first_name 
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -59,9 +68,10 @@ def send_welcome(message):
     
     welcome_text = (
         f"🌟 به ربات جوک‌های بی‌مزه خوش اومدی {user_first_name} عزیز!\n\n"
-        f"ما اینجا بیش از {total_jokes} جوک آماده کردیم.\n\n"
+        f"ما اینجا بیش از {total_jokes} جوک و {total_riddles} چیستان آماده کردیم.\n\n"
         f"📌 قابلیت‌ها:\n"
         f"✅ آرشیو بزرگ جوک (+{total_jokes} مورد)\n"
+        f"✅ آرشیو جذاب چیستان (+{total_riddles} مورد)\n"
         f"✅ ارسال مستقیم پیشنهادات به ادمین\n"
         f"✅ پشتیبانی آنلاین\n\n"
         f"از منوی زیر استفاده کن 👇"
@@ -78,8 +88,11 @@ def handle_message(message):
         markup.add(btn)
         bot.send_message(message.chat.id, joke["q"], reply_markup=markup)
 
-    elif message.text == "🧐 چیستان": # پاسخ به دکمه چیستان
-        bot.send_message(message.chat.id, "🚧 این بخش بزودی اضافه میشود...")
+    elif message.text == "🧐 چیستان": 
+        riddle = random.choice(riddles)
+        # استفاده از تگ اسپویلر در HTML برای مخفی کردن پاسخ
+        riddle_text = f"❓ {riddle['q']}\n\nپاسخ: <tg-spoiler>{riddle['a']}</tg-spoiler>"
+        bot.send_message(message.chat.id, riddle_text, parse_mode="HTML")
         
     elif message.text == "👨‍💻 پشتیبانی":
         markup = types.InlineKeyboardMarkup()
