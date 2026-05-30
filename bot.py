@@ -7,40 +7,42 @@ import datetime
 import pytz
 import jdatetime
 import json
-from flask import Flask
-from threading import Thread
+from flask import Flask, request  # ابزار request برای گرفتن اطلاعات از تلگرام اضافه شد
 
 # ==========================================
-# بخش اول: تنظیمات وب‌سرور برای بیدار نگه داشتن ربات
-# ==========================================
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is Online!"
-
-def run():
-    # دریافت پورت خودکار از سرور
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-# اجرای سرور نگهدارنده قبل از شروع ربات
-keep_alive()
-
-# ==========================================
-# بخش دوم: تنظیمات اولیه ربات و حافظه
+# بخش اول: تنظیمات اولیه و آدرس سرور تو در Railway
 # ==========================================
 TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_CHAT_ID = 7007467756  
 
+# آدرس اختصاصی سرور تو در ری‌لووی (بدون اسلش / در انتها)
+WEBHOOK_URL = "https://Lucid-vibrancy-production.up.railway.app"
+
 bot = telebot.TeleBot(TOKEN)
 
-# این متغیر مثل یک دفترچه یادداشت است که زمان شروع بازی هر نفر را با آیدی او ذخیره می‌کند
+# متغیر حافظه برای بازی تست واکنش
 user_timers = {} 
+
+# ==========================================
+# بخش دوم: تنظیمات وب‌سرور Flask و مسیرهای ورودی
+# ==========================================
+app = Flask('')
+
+# صفحه اصلی که خودت بازش می‌کردی و می‌نوشت Bot is Online
+@app.route('/')
+def home():
+    return "Bot is Online!"
+
+# این مسیر مخصوص تلگرام است؛ تلگرام پیام‌ها را به این آدرسِ مخفی پست (POST) می‌کند
+@app.route('/' + TOKEN, methods=['POST'])
+def get_message():
+    # ۱. دریافت اطلاعات خام از تلگرام
+    json_string = request.get_data().decode('utf-8')
+    # ۲. تبدیل اطلاعات خام به فرمت قابل فهم برای ربات
+    update = telebot.types.Update.de_json(json_string)
+    # ۳. سپردن پیام به ربات برای پردازش
+    bot.process_new_updates([update])
+    return "!", 200
 
 # ==========================================
 # بخش سوم: خواندن داده‌ها از فایل‌های JSON
@@ -66,15 +68,13 @@ def send_welcome(message):
     total_riddles = len(riddles)
     user_first_name = message.from_user.first_name 
     
-    # ساخت کیبورد پایین صفحه
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("😂 یه جوک بگو")
     btn_chiestan = types.KeyboardButton("🧐 چیستان")
-    btn_reaction = types.KeyboardButton("🧠 تست واکنش و هوش") # دکمه جدید اضافه شد
+    btn_reaction = types.KeyboardButton("🧠 تست واکنش و هوش")
     btn2 = types.KeyboardButton("📩 پیشنهادات و انتقادات")
     btn3 = types.KeyboardButton("👨‍💻 پشتیبانی")
     
-    # چیدمان دکمه‌ها در ردیف‌های مختلف
     markup.add(btn1, btn_chiestan)
     markup.add(btn_reaction)
     markup.add(btn2, btn3)
@@ -104,7 +104,6 @@ def handle_message(message):
 
     elif message.text == "🧐 چیستان": 
         riddle = random.choice(riddles)
-        # تگ اسپویلر باعث می‌شود متن تار شود تا کاربر روی آن کلیک کند
         riddle_text = f"❓ {riddle['q']}\n\nپاسخ: <tg-spoiler>{riddle['a']}</tg-spoiler>"
         bot.send_message(message.chat.id, riddle_text, parse_mode="HTML")
         
@@ -135,14 +134,12 @@ def handle_message(message):
         
     elif message.text == "📩 پیشنهادات و انتقادات":
         msg = bot.send_message(message.chat.id, "📝 لطفاً پیام، پیشنهاد یا جوک خود را ارسال کنید.\n\n⚠️ پیام شما مستقیماً برای برنامه‌نویس فوروارد می‌شود.")
-        # دستور زیر به ربات می‌گوید: پیام بعدیِ کاربر را بگیر و بفرست به تابع forward_to_admin
         bot.register_next_step_handler(msg, forward_to_admin)
 
 # ==========================================
 # بخش ششم: ارسال پیشنهاد به ادمین
 # ==========================================
 def forward_to_admin(message):
-    # اگر کاربر پشیمان شد و روی یکی از دکمه‌های اصلی کلیک کرد، ارسال لغو شود
     if message.text in ["😂 یه جوک بگو", "🧐 چیستان", "🧠 تست واکنش و هوش", "👨‍💻 پشتیبانی", "📩 پیشنهادات و انتقادات", "/start"]:
         bot.send_message(message.chat.id, "❌ ارسال پیشنهاد لغو شد.")
         handle_message(message)
@@ -181,15 +178,12 @@ def forward_to_admin(message):
 # ==========================================
 # بخش هفتم: مدیریت دکمه‌های شیشه‌ای (Inline Buttons)
 # ==========================================
-
-# ۱. هندلر برای دکمه جواب جوک‌ها
 @bot.callback_query_handler(func=lambda call: call.data.startswith('ans_'))
 def answer_joke(call):
     idx = int(call.data.split('_')[1])
     bot.send_message(call.message.chat.id, jokes[idx]["a"])
     bot.answer_callback_query(call.id)
 
-# ۲. هندلر برای بازی تست واکنش
 @bot.callback_query_handler(func=lambda call: call.data.startswith('reaction_'))
 def handle_reaction_game(call):
     user_id = call.from_user.id
@@ -199,9 +193,7 @@ def handle_reaction_game(call):
         bot.send_message(call.message.chat.id, "❌ به منوی اصلی برگشتیم.")
 
     elif call.data == "reaction_start":
-        # گرفتن زمانِ استارت کاربر و ذخیره در دفترچه (دیکشنری)
         user_timers[user_id] = time.time()
-        
         markup = types.InlineKeyboardMarkup()
         btn_stop = types.InlineKeyboardButton("🛑 توقف تایمر", callback_data="reaction_stop")
         btn_back = types.InlineKeyboardButton("🔙 انصراف", callback_data="reaction_cancel")
@@ -216,13 +208,11 @@ def handle_reaction_game(call):
         )
 
     elif call.data == "reaction_stop":
-        # اگر زمان کاربر در حافظه موجود بود
         if user_id in user_timers:
             end_time = time.time() 
             elapsed = end_time - user_timers[user_id] 
-            del user_timers[user_id] # پاک کردن زمان کاربر برای بازی‌های بعدی
+            del user_timers[user_id] 
             
-            # پیدا کردن میزان اختلاف با ۸ ثانیه. تابع abs باعث می‌شود اعداد منفی نداشته باشیم
             diff = abs(8.0 - elapsed) 
             
             if diff <= 0.2:
@@ -257,8 +247,16 @@ def handle_reaction_game(call):
             bot.answer_callback_query(call.id, "زمان شما ثبت نشده بود! دوباره شروع کنید.", show_alert=True)
 
 # ==========================================
-# بخش هشتم: روشن کردن و اجرای مداوم ربات
+# بخش هشتم: فعال‌سازی وب‌هوک و اجرای سرور
 # ==========================================
 if __name__ == "__main__":
-    bot.polling(none_stop=True)
-            
+    # ۱. ابتدا هر اتصال وب‌هوک قدیمی را پاک می‌کنیم تا تداخل ایجاد نشود
+    bot.remove_webhook()
+    
+    # ۲. آدرس جدید وب‌هوک را به تلگرام معرفی می‌کنیم (ترکیب لینک ری‌لووی و توکن ربات)
+    bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+    
+    # ۳. روشن کردن سرور فلاسک روی پورت سرور ری‌لووی
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+        
