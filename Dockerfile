@@ -1,10 +1,15 @@
 FROM ubuntu:22.04
 
-# نصب تمام پیش‌نیازهای لازم برای کامپایل C++
+# جلوگیری از توقف نصب به خاطر درخواست‌های تایم‌زون و کیبورد ابونتو
+ENV DEBIAN_FRONTEND=noninteractive
+
+# نصب تمامی پیش‌نیازهای حیاتی با دقت کامل (شامل curl و zlib)
 RUN apt-get update && apt-get install -y \
     g++ \
     cmake \
+    make \
     git \
+    pkg-config \
     libboost-all-dev \
     libssl-dev \
     libcurl4-openssl-dev \
@@ -14,8 +19,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY . .
 
-# کامپایل برنامه
-RUN mkdir build && cd build && cmake .. && make
+# ساخت پوشه و کامپایل کدها
+RUN mkdir -p build && cd build && cmake .. && make
 
-# دستور اجرای ربات
+# اجرای ربات پس از اتمام بیلد
 CMD ["./build/my_bot"]
