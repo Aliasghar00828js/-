@@ -10,31 +10,67 @@ import json
 from flask import Flask, request
 
 # ==========================================
-# بخش اول: تنظیمات اولیه و Webhook
+# بخش اول: تنظیمات اولیه ربات و سرور
 # ==========================================
+# دریافت توکن از متغیرهای محیطی Railway
 TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_CHAT_ID = 7007467756  
-WEBHOOK_URL = "https://Lucid-vibrancy-production.app.railway.app" # آدرس سرور تو
+
+# آدرس سرور شما (بدون اسلش / در انتهای آن)
+WEBHOOK_URL = "https://Lucid-vibrancy-production.app.railway.app" 
 
 bot = telebot.TeleBot(TOKEN)
 user_timers = {} 
-app = Flask('')
+app = Flask(__name__)
 
+# ==========================================
+# فعال‌سازی خودکار Webhook هنگام استارت سرور
+# ==========================================
+try:
+    # ابتدا وب‌هوک قبلی را پاک می‌کنیم
+    bot.remove_webhook()
+    time.sleep(1)
+    # وب‌هوک جدید را تنظیم می‌کنیم (ترکیب آدرس سرور + توکن برای امنیت)
+    bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+    print("Webhook is set successfully!")
+except Exception as e:
+    print(f"Error setting webhook: {e}")
+
+# ==========================================
+# مسیرهای (Routes) وب‌سرور Flask
+# ==========================================
 @app.route('/')
 def home():
-    return "Bot is Online!"
+    # این مسیر برای این است که مطمئن شویم سرور بالا آمده است
+    return "Bot is Online and Webhook is active!"
 
-@app.route('/' + TOKEN, methods=['POST'])
+@app.route(f'/{TOKEN}', methods=['POST'])
 def get_message():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return "!", 200
+    # این مسیر درخواست‌های تلگرام را دریافت کرده و به ربات می‌دهد
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    else:
+        return 'Forbidden', 403
 
 # ==========================================
-# بخش دوم: خواندن داده‌ها از فایل‌های JSON
+# بخش دوم: منطق و هندلرهای ربات (کدهای خودت)
 # ==========================================
-def load_json(filename, default_data):
+
+# 1. کدهای مربوط به خواندن فایل‌های json را اینجا بگذار
+# مثلا: 
+# with open('dare.json', 'r', encoding='utf-8') as f:
+#     dare_data = json.load(f)
+
+
+# 2. هندلرهای ربات (message_handler) را اینجا بگذار
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "سلام! ربات من با موفقیت روی Railway دپلوی شد و کار میکنه 🚀")
+
+# بقیه کدهای رباتت رو زیر همین خط اضافه کن...def load_json(filename, default_data):
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             return json.load(f)
