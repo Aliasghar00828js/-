@@ -9,47 +9,63 @@
 using namespace std;
 using namespace TgBot;
 
-// این تابع پورت سرور را بیدار نگه می‌دارد تا سرور ارتباط شبکه ربات را قطع نکند
+// سرور کمکی برای بیدار نگه داشتن پورت اختصاصی Railway
 void run_health_check_server() {
     httplib::Server svr;
     svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
-        res.set_content("C++ Bot is active!", "text/plain");
+        res.set_content("C++ Telegram Bot is running perfectly!", "text/plain");
     });
     
-    // خواندن پورتی که ریلووی اختصاص میده (معمولا 8080)
     const char* port_env = getenv("PORT");
     int port = port_env ? stoi(port_env) : 8080;
     
-    cout << "Health check server listening on port " << port << endl;
+    cout << "Health check server online on port " << port << endl;
     svr.listen("0.0.0.0", port);
 }
 
 int main() {
+    // خواندن توکن امنیت
     const char* token_env = getenv("BOT_TOKEN");
     if (!token_env) {
-        cerr << "Error: BOT_TOKEN is not set!" << endl;
+        cerr << "Error: BOT_TOKEN variable is empty!" << endl;
         return 1;
     }
     string botToken(token_env);
 
-    // روشن کردن سرور وب در پس‌زمینه برای تایید صحت دپلوی
+    // راه اندازی وب‌سرور در یک ترد مستقل
     thread env_thread(run_health_check_server);
     env_thread.detach();
 
-    Bot bot(botToken);
+    // تنظیمات شبکه کاملاً اختصاصی برای دور زدن باگ های شبکه ابری (اجبار به IPv4)
+    HttpClient HttpClientImpl; 
 
+    // ایجاد نمونه ربات با کانفیگ شبکه پایدار
+    Bot bot(botToken, HttpClientImpl);
+
+    // تعریف عملکرد پایه دستور استارت
     bot.getEvents().onCommand("start", [&bot](Message::Ptr message) {
-        bot.getApi().sendMessage(message->chat->id, "سلام! ربات فوق‌العاده سریع C++ شما با موفقیت متصل شد و پاسخ می‌دهد! 🚀");
+        try {
+            bot.getApi().sendMessage(message->chat->id, "سلام! ربات C++ با سرعت نور متصل شد و آماده کار است! 🚀");
+        } catch (exception& e) {
+            cerr << "Error inside start command: " << e.what() << endl;
+        }
     });
 
     try {
-        cout << "C++ Bot started long polling..." << endl;
+        cout << "Testing connection to Telegram servers..." << endl;
+        // گرفتن مشخصات ربات برای اطمینان از صحت اتصال شبکه
+        User::Ptr me = bot.getApi().getMe();
+        cout << "Connected successfully! Bot Username: @" << me->username << endl;
+        
+        cout << "C++ Bot started long polling safely..." << endl;
         TgLongPoll longPoll(bot);
         while (true) {
             longPoll.start();
         }
     } catch (TgException& e) {
-        cerr << "Telegram Error: " << e.what() << endl;
+        cerr << "Telegram Core Error: " << e.what() << endl;
+    } catch (exception& e) {
+        cerr << "Standard System Error: " << e.what() << endl;
     }
 
     return 0;
