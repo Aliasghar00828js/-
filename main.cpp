@@ -3,13 +3,13 @@
 #include <cstdlib>
 #include <thread>
 #include <tgbot/tgbot.h>
-#define CPPHTTPLIB_OPENSSL_SUPPORT
+// آن خط دردسرساز امنیتی از اینجا حذف شد، فقط خود کتابخانه را لود می‌کنیم
 #include <httplib.h>
 
 using namespace std;
 using namespace TgBot;
 
-// سرور کمکی برای بیدار نگه داشتن پورت اختصاصی Railway
+// سرور کمکی ساده (فقط HTTP) برای بیدار نگه داشتن پورت اختصاصی Railway
 void run_health_check_server() {
     httplib::Server svr;
     svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
