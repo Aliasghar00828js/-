@@ -35,43 +35,8 @@ int main() {
     thread env_thread(run_health_check_server);
     env_thread.detach();
 
-    // ایجاد ربات با تنظیمات پیش‌فرض شبکه (بخش اصلاح شده)
+    // ایجاد ربات با تنظیمات پیش‌فرض شبکه
     Bot bot(botToken);
-
-    // تعریف عملکرد پایه دستور استارت
-    bot.getEvents().onCommand("start", [&bot](Message::Ptr message) {
-        try {
-            bot.getApi().sendMessage(message->chat->id, "سلام! ربات C++ با سرعت نور متصل شد و آماده کار است! 🚀");
-        } catch (exception& e) {
-            cerr << "Error inside start command: " << e.what() << endl;
-        }
-    });
-
-    try {
-        cout << "Testing connection to Telegram servers..." << endl;
-        // گرفتن مشخصات ربات برای اطمینان از صحت اتصال شبکه
-        User::Ptr me = bot.getApi().getMe();
-        cout << "Connected successfully! Bot Username: @" << me->username << endl;
-        
-        cout << "C++ Bot started long polling safely..." << endl;
-        TgLongPoll longPoll(bot);
-        while (true) {
-            longPoll.start();
-        }
-    } catch (TgException& e) {
-        cerr << "Telegram Core Error: " << e.what() << endl;
-    } catch (exception& e) {
-        cerr << "Standard System Error: " << e.what() << endl;
-    }
-
-    return 0;
-}    env_thread.detach();
-
-    // تنظیمات شبکه کاملاً اختصاصی برای دور زدن باگ های شبکه ابری (اجبار به IPv4)
-    HttpClient HttpClientImpl; 
-
-    // ایجاد نمونه ربات با کانفیگ شبکه پایدار
-    Bot bot(botToken, HttpClientImpl);
 
     // تعریف عملکرد پایه دستور استارت
     bot.getEvents().onCommand("start", [&bot](Message::Ptr message) {
