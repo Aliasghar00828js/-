@@ -8,7 +8,7 @@
 using namespace std;
 using namespace TgBot;
 
-// سرور کمکی ساده (فقط HTTP) برای بیدار نگه داشتن پورت اختصاصی Railway
+// سرور کمکی برای بیدار نگه داشتن پورت اختصاصی Railway
 void run_health_check_server() {
     httplib::Server svr;
     svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
@@ -23,7 +23,7 @@ void run_health_check_server() {
 }
 
 int main() {
-    // خواندن توکن امنیت
+    // خواندن توکن از محیط
     const char* token_env = getenv("BOT_TOKEN");
     if (!token_env) {
         cerr << "Error: BOT_TOKEN variable is empty!" << endl;
@@ -31,14 +31,14 @@ int main() {
     }
     string botToken(token_env);
 
-    // راه اندازی وب‌سرور در یک ترد مستقل
+    // راه اندازی وب‌سرور در ترد مستقل
     thread env_thread(run_health_check_server);
     env_thread.detach();
 
-    // ایجاد ربات با تنظیمات پیش‌فرض شبکه
+    // ایجاد ربات
     Bot bot(botToken);
 
-    // تعریف عملکرد پایه دستور استارت
+    // دستور استارت
     bot.getEvents().onCommand("start", [&bot](Message::Ptr message) {
         try {
             bot.getApi().sendMessage(message->chat->id, "سلام! ربات C++ با سرعت نور متصل شد و آماده کار است! 🚀");
@@ -49,9 +49,11 @@ int main() {
 
     try {
         cout << "Testing connection to Telegram servers..." << endl;
-        // گرفتن مشخصات ربات برای اطمینان از صحت اتصال شبکه
         User::Ptr me = bot.getApi().getMe();
         cout << "Connected successfully! Bot Username: @" << me->username << endl;
+        
+        // رفع مشکل تداخل وب‌هوک
+        bot.getApi().deleteWebhook();
         
         cout << "C++ Bot started long polling safely..." << endl;
         TgLongPoll longPoll(bot);
