@@ -1,5 +1,0 @@
-pyTelegramBotAPI
-jdatetime
-pytz
-flask
-gunicorn
