@@ -10,31 +10,77 @@ import json
 from flask import Flask, request
 
 # ==========================================
-# بخش اول: تنظیمات اولیه ربات و سرور
+# بخش اول: تنظیمات اولیه ربات و وب‌سرور
 # ==========================================
-# دریافت توکن از متغیرهای محیطی Railway
 TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_CHAT_ID = 7007467756  
-
-# آدرس سرور شما (بدون اسلش / در انتهای آن)
 WEBHOOK_URL = "https://Lucid-vibrancy-production.app.railway.app" 
 
 bot = telebot.TeleBot(TOKEN)
 user_timers = {} 
 app = Flask(__name__)
 
-# ==========================================
-# فعال‌سازی خودکار Webhook هنگام استارت سرور
-# ==========================================
+# لود کردن امن فایل‌های JSON با مدیریت خطا
+def load_json_file(filename):
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading {filename}: {e}")
+        return [{"q": "دوباره تلاش کنید.", "a": "خطا"}]
+
+# خواندن داده‌ها از فایل‌ها
+dare_data = load_json_file('dare.json')
+jokes_data = load_json_file('jokes.json')
+riddles_data = load_json_file('riddles.json')
+truth_data = load_json_file('truth.json')
+
+# فعال‌سازی خودکار وب‌هوک هنگام بالا آمدن سرور
 try:
-    # ابتدا وب‌هوک قبلی را پاک می‌کنیم
     bot.remove_webhook()
     time.sleep(1)
-    # وب‌هوک جدید را تنظیم می‌کنیم (ترکیب آدرس سرور + توکن برای امنیت)
     bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
-    print("Webhook is set successfully!")
+    print("Webhook set successfully!")
 except Exception as e:
-    print(f"Error setting webhook: {e}")
+    print(f"Webhook setup failed: {e}")
+
+# ==========================================
+# مسیرهای وب‌سرور (Flask Routes)
+# ==========================================
+@app.route('/')
+def home():
+    return "Bot is Online and Webhook is active!"
+
+@app.route(f'/{TOKEN}', methods=['POST'])
+def get_message():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    else:
+        return 'Forbidden', 403
+
+# ==========================================
+# بخش دوم: منطق و هندلرهای ربات (کدهای شما)
+# ==========================================
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "سلام! ربات با موفقیت روی Railway اجرا شد و آماده کار است. 🚀")
+
+# مثال برای نحوه استفاده از داده‌های لود شده (میتوانید شخصی‌سازی کنید):
+@bot.message_handler(commands=['dare'])
+def send_dare(message):
+    item = random.choice(dare_data)
+    bot.reply_to(message, f"جرات: {item.get('q', 'خطا در دریافت داده')}")
+
+@bot.message_handler(commands=['joke'])
+def send_joke(message):
+    item = random.choice(jokes_data)
+    bot.reply_to(message, f"جوک: {item.get('q', 'خطا در دریافت داده')}")
+
+# هندلرهای پیام‌ها و دکمه‌های دیگر خود را دقیقا از اینجا به پایین اضافه کنید:    print(f"Error setting webhook: {e}")
 
 # ==========================================
 # مسیرهای (Routes) وب‌سرور Flask
