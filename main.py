@@ -36,9 +36,9 @@ def handle_all_messages(message):
             if is_mentioned:
                 user_text = user_text.replace(f"@{BOT_USERNAME}", "").strip()
 
-            # ارسال متن به مدل Llama 3 روی سرورهای پرسرعت Groq
+            # ارسال متن به مدل جدید و فعال Llama 3.1 روی سرورهای Groq
             completion = client.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[
                     {"role": "user", "content": user_text}
                 ]
